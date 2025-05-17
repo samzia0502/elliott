@@ -31,7 +31,7 @@ if close_series.empty:
 
 close_prices = close_series.to_numpy().flatten()
 
-# Detect local peaks and troughs
+    # Detect local peaks and troughs
 peaks, _ = find_peaks(close_prices, distance=5)
 troughs, _ = find_peaks(-close_prices, distance=5)
 
