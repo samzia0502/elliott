@@ -2,15 +2,15 @@ import streamlit as st
 import yfinance as yf
 import plotly.graph_objects as go
 from scipy.signal import find_peaks
-import openai
 import pandas as pd
+from openai import OpenAI
 
 st.set_page_config(page_title="Elliott Wave AI Dashboard", layout="wide")
 st.title("📈 Elliott Wave AI Dashboard (1H Stocks)")
 
 # User input
 ticker = st.text_input("Enter Stock Ticker (e.g. AAPL)", "AAPL")
-api_key = st.text_input("Enter OpenAI API Key (for wave summary)", type="password")
+api_key = st.text_input("Enter OpenAI API Key (for GPT Summary)", type="password")
 
 if st.button("Run Analysis"):
     with st.spinner("Fetching data and analyzing..."):
@@ -18,7 +18,7 @@ if st.button("Run Analysis"):
         data = yf.download(ticker, interval="1h", period="7d")
 
         if data.empty:
-            st.error("⚠️ No data returned. Check the ticker symbol or your internet connection.")
+            st.error("⚠️ No data returned. Check the ticker symbol or internet connection.")
             st.stop()
 
         close_series = data["Close"].dropna()
@@ -44,7 +44,7 @@ if st.button("Run Analysis"):
             name="Candlesticks"
         ))
 
-        # Plot peaks (waves 1, 3, 5 as placeholders)
+        # Plot peaks (waves 1, 3, 5)
         fig.add_trace(go.Scatter(
             x=data.index[peaks],
             y=data["Close"].iloc[peaks],
@@ -55,7 +55,7 @@ if st.button("Run Analysis"):
             textposition="top center"
         ))
 
-        # Plot troughs (waves 2 and 4 as placeholders)
+        # Plot troughs (waves 2 and 4)
         fig.add_trace(go.Scatter(
             x=data.index[troughs],
             y=data["Close"].iloc[troughs],
@@ -68,10 +68,11 @@ if st.button("Run Analysis"):
 
         st.plotly_chart(fig, use_container_width=True)
 
-        # Optional GPT-based AI Summary
+        # GPT Summary
         if api_key:
             try:
-                openai.api_key = api_key
+                client = OpenAI(api_key=api_key)
+
                 peak_vals = list(data["Close"].iloc[peaks][:3])
                 trough_vals = list(data["Close"].iloc[troughs][:2])
                 prompt = (
@@ -79,16 +80,19 @@ if st.button("Run Analysis"):
                     f"analyze the Elliott Wave structure (Impulse + Corrective), and provide a short trading outlook."
                 )
 
-                response = openai.ChatCompletion.create(
+                response = client.chat.completions.create(
                     model="gpt-4",
-                    messages=[{"role": "user", "content": prompt}]
+                    messages=[
+                        {"role": "user", "content": prompt}
+                    ]
                 )
 
                 st.subheader("🧠 AI Elliott Wave Summary")
-                st.markdown(response["choices"][0]["message"]["content"])
+                st.markdown(response.choices[0].message.content)
 
             except Exception as e:
                 st.error(f"🔒 OpenAI Error: {e}")
         else:
-            st.info("Enter your OpenAI API key above to generate an AI summary.")
+            st.info("🔑 Enter your OpenAI API key to get a GPT-4 wave summary.")
+
 
