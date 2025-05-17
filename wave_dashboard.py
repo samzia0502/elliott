@@ -22,9 +22,19 @@ if st.button("Run Analysis"):
 
         close_prices = data["Close"].values
 
-        # Detect local peaks and troughs
-        peaks, _ = find_peaks(close_prices, distance=5)
-        troughs, _ = find_peaks(-close_prices, distance=5)
+     # Ensure Close is a clean 1D array with no NaNs
+close_series = data["Close"].dropna()
+
+if close_series.empty:
+    st.error("No valid price data (only NaNs). Try a different stock or time window.")
+    st.stop()
+
+close_prices = close_series.to_numpy().flatten()
+
+# Detect local peaks and troughs
+peaks, _ = find_peaks(close_prices, distance=5)
+troughs, _ = find_peaks(-close_prices, distance=5)
+
 
         # Plot the candlestick chart
         fig = go.Figure()
